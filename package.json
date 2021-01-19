@@ -1,0 +1,26 @@
+{
+  "name": "linebot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@line/bot-sdk": "^7.1.0",
+    "agh.sprintf": "0.0.11",
+    "cheerio": "^1.0.0-rc.3",
+    "conf": "^8.0.0",
+    "express": "^4.17.1",
+    "https": "^1.0.0",
+    "puppeteer": "^5.3.1",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.6",
+    "request-promise-native": "^1.0.9",
+    "sprintf": "^0.1.5",
+    "sprintf-js": "^1.1.2"
+  }
+}
