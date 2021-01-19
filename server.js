@@ -5,7 +5,6 @@ const line = require('@line/bot-sdk');
 const PORT = 3000;
 const request = require("request");
 const cheerio = require("cheerio");
-const date = new Date();
 const agh = require('agh.sprintf');
 const fs = require('fs');
 const https = require('https');
@@ -40,7 +39,8 @@ app.post('/webhook', line.middleware(config), (req, res) => {
 const client = new line.Client(config);
 
 function getUseYM(){
-        var year = date.getFullYear();
+        let date = new Date();
+	var year = date.getFullYear();
         var month = date.getMonth()+1;
         if(month<10){
                 return `${year}0${month}`;
