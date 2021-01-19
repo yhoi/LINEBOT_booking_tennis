@@ -51,6 +51,7 @@ function getUseYM(){
 };
 
 function Domeresult(headers){
+	let date = new Date();
 	return new Promise(
 		function(resolve,reject){
 		const options ={
@@ -105,6 +106,7 @@ function Domeresult(headers){
 };
 
 function result(headers){
+	let date = new Date();
         return new Promise(
 		function(resolve,reject){
 			var options ={
