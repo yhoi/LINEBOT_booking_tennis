@@ -21,8 +21,8 @@ const config = {
   channelAccessToken: env.LINECHANNEL_ACCESSTOKEN
 };
 
-//fetchHeadersForeScrapingはスクレイピングに必要なheaderを返す関数
-function fetchHeadersForeScraping(){
+//fetchHeadersForScrapingはスクレイピングに必要なheaderを返す関数
+function fetchHeadersForScraping(){
   return new Promise(
     function(resolve,reject){
       const options = {
@@ -99,10 +99,10 @@ function printTimetable($,courtNum,i){
   const x = $('.koma-table').eq(i);
   //jはスクレイピングで取得するマークの指定
   for(let j=1;j<13;j++){
-    //markはコートが空いているかのマークを代入
-    const mark = $(x).find('td').eq(j).text();
+    //isMarkはコートが空いているかのマークを代入
+    const isMark = $(x).find('td').eq(j).text();
     timetable++;
-    text += agh.sprintf("%2d時　～　%2d時  |  %5s\n",timetable,timetable+1,mark);
+    text += agh.sprintf("%2d時　～　%2d時  |  %5s\n",timetable,timetable+1,isMark);
   }
   text += '\n';
   return text;
@@ -126,10 +126,10 @@ function fetchDomeScheduleText(headers){
 	  //iはスクレイピングで取得をするコート番号の指定
 	  for(let i=26;i<length-1;i++){
 	    //複数のコートを表示するところをcontinue
+	    //例　１・２コート　このような形で表示されているところ
 	    if(i==27||i==30){
 	      continue;
 	    }
-	    //textに代入する
 	    else{
 	      text += printTimetable($,courtNum,i);
 	      courtNum++; 
@@ -158,10 +158,10 @@ function fetchParkScheduleText(headers){
 	  //iはスクレイピングで取得をするコート番号の指定
 	  for(let i=2;i<=24;i++){
 	    //複数のコートを表示するところをcontinue
+	    //例　１・２コート　このような形で表示されているところ
 	    if(i==8||i==20||i==13){
 	      continue;
 	    }
-	    //textに代入する
 	    else{
 	      text+=printTimetable($,courtNum,i);
 	      courtNum++;
@@ -173,7 +173,6 @@ function fetchParkScheduleText(headers){
     });
 };
 
-//サーバを立ち上げる
 server.listen(PORT);
 console.log(`Server running at ${PORT}`);
 
@@ -182,7 +181,7 @@ async function handleEvent(event) {
     return Promise.resolve(null);
   }
 
-  const headers = await fetchHeadersForeScraping(); 
+  const headers = await fetchHeadersForScraping(); 
   let replyText = '';
 
   if(event.message.text === '会津ドーム'){
