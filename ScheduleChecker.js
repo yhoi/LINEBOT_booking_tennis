@@ -21,7 +21,8 @@ const config = {
   channelAccessToken: env.LINECHANNEL_ACCESSTOKEN
 };
 
-function getHeaders(){
+//fetchHeadersForeScrapingはスクレイピングに必要なheaderを返す関数
+function fetchHeadersForeScraping(){
   return new Promise(
     function(resolve,reject){
       const options = {
@@ -46,6 +47,7 @@ const app = express();
 const server = https.createServer(options,app);
 
 app.post('/webhook', line.middleware(config), (req, res) => {
+  //受信したメッセージの情報をconsole
   console.log(req.body.events);
 
   Promise
@@ -54,8 +56,6 @@ app.post('/webhook', line.middleware(config), (req, res) => {
 });
 
 const client = new line.Client(config);
-//let i=0;
-//let j=0;
 
 function getYearMonthString(){
   const date = new Date();
@@ -91,21 +91,24 @@ function setCourtOptions(headers){
   return options; 
 };
 
+//printTimetableはコートの空き状況をtextとして返す関数
 function printTimetable($,courtNum,i){
   let timetable =8;
   let text='';
   text += agh.sprintf('%3sコート\n',courtNum);
   const x = $('.koma-table').eq(i);
+  //jはスクレイピングで取得するマークの指定
   for(let j=1;j<13;j++){
-    let mark = $(x).find('td').eq(j).text();
+    //markはコートが空いているかのマークを代入
+    const mark = $(x).find('td').eq(j).text();
     timetable++;
-    text += agh.sprintf('%2d時　～　%d時  |  %5s\n',timetable,timetable+1,mark);
+    text += agh.sprintf("%2d時　～　%2d時  |  %5s\n",timetable,timetable+1,mark);
   }
   text += '\n';
   return text;
 }
 
-function domeResult(headers){
+function fetchDomeScheduleText(headers){
   const options = setCourtOptions(headers);  
   return new Promise(
     function(resolve,reject){
@@ -119,10 +122,14 @@ function domeResult(headers){
 	  text +='  会津ドーム\n';
 	  const $ = cheerio.load(body);
 	  const length = $('.koma-table').length;
+
+	  //iはスクレイピングで取得をするコート番号の指定
 	  for(let i=26;i<length-1;i++){
+	    //複数のコートを表示するところをcontinue
 	    if(i==27||i==30){
 	      continue;
 	    }
+	    //textに代入する
 	    else{
 	      text += printTimetable($,courtNum,i);
 	      courtNum++; 
@@ -134,7 +141,7 @@ function domeResult(headers){
     });
 };
 
-function parkResult(headers){
+function fetchParkScheduleText(headers){
   const date = new Date();
   return new Promise(
     function(resolve,reject){
@@ -148,11 +155,13 @@ function parkResult(headers){
 	else {
 	  text +='   会津総合運動公園\n';
 	  const $ = cheerio.load(body);
-	  const length = $('.koma-table').length;
+	  //iはスクレイピングで取得をするコート番号の指定
 	  for(let i=2;i<=24;i++){
+	    //複数のコートを表示するところをcontinue
 	    if(i==8||i==20||i==13){
 	      continue;
 	    }
+	    //textに代入する
 	    else{
 	      text+=printTimetable($,courtNum,i);
 	      courtNum++;
@@ -164,6 +173,7 @@ function parkResult(headers){
     });
 };
 
+//サーバを立ち上げる
 server.listen(PORT);
 console.log(`Server running at ${PORT}`);
 
@@ -172,21 +182,21 @@ async function handleEvent(event) {
     return Promise.resolve(null);
   }
 
-  const headers = await getHeaders(); 
+  const headers = await fetchHeadersForeScraping(); 
   let replyText = '';
 
   if(event.message.text === '会津ドーム'){
     replyText = 'コートの空き状況はこちら';
-    replyText +=  await domeResult(headers);
+    replyText +=  await fetchDomeScheduleText(headers);
   }
   else if(event.message.text === '会津総合運動公園'){
     replyText = 'コートの空き状況はこちら\n';
-    replyText += await parkResult(headers);
+    replyText += await fetchParkScheduleText(headers);
   }
   else{
     replyText = '該当するテニスコートを入力してください\n 例（会津ドーム、会津総合運動公園)';
   }
-
+ 
   return client.replyMessage(event.replyToken, {
     type: 'text',
     text: replyText
