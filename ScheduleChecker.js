@@ -99,10 +99,10 @@ function printTimetable($,courtNum,i){
   const x = $('.koma-table').eq(i);
   //jはスクレイピングで取得するマークの指定
   for(let j=1;j<13;j++){
-    //isMarkはコートが空いているかのマークを代入
-    const isMark = $(x).find('td').eq(j).text();
+    //markStringはコートが空いているかのマークを代入
+    const markString = $(x).find('td').eq(j).text();
     timetable++;
-    text += agh.sprintf("%2d時　～　%2d時  |  %5s\n",timetable,timetable+1,isMark);
+    text += agh.sprintf("%2d時　～　%2d時  |  %5s\n",timetable,timetable+1,markString);
   }
   text += '\n';
   return text;
@@ -181,16 +181,16 @@ async function handleEvent(event) {
     return Promise.resolve(null);
   }
 
-  const headers = await fetchHeadersForScraping(); 
+  const scrapingHeaders = await fetchHeadersForScraping(); 
   let replyText = '';
 
   if(event.message.text === '会津ドーム'){
     replyText = 'コートの空き状況はこちら';
-    replyText +=  await fetchDomeScheduleText(headers);
+    replyText +=  await fetchDomeScheduleText(scrapingHeaders);
   }
   else if(event.message.text === '会津総合運動公園'){
     replyText = 'コートの空き状況はこちら\n';
-    replyText += await fetchParkScheduleText(headers);
+    replyText += await fetchParkScheduleText(scrapingHeaders);
   }
   else{
     replyText = '該当するテニスコートを入力してください\n 例（会津ドーム、会津総合運動公園)';
