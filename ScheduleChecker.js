@@ -17,8 +17,8 @@ const options ={
 }
 
 const config = {
-  channelSecret: env.LINECHANNEL_SECRET,
-  channelAccessToken: env.LINECHANNEL_ACCESSTOKEN
+  channelSecret: env.LINECHANNEL_SECRET_BOOKING_AIZUTENNIS,
+  channelAccessToken: env.LINECHANNEL_ACCESSTOKEN_BOOKING_AIZUTENNIS
 };
 
 //fetchHeadersForScrapingはスクレイピングに必要なheaderを返す関数
@@ -28,7 +28,7 @@ function fetchHeadersForScraping(){
       const options = {
 	url:'http://reserve.city.aizuwakamatsu.fukushima.jp/index.php',
 	headers:{
-	  'Set-Cookie':env.AIZUTENNIS_COOKIE,
+	  'Set-Cookie':env.AIZUTENNIS_BOOKING_COOKIE,
 	}
       }
       request(options,function(error,response,body){
@@ -173,6 +173,13 @@ function fetchParkScheduleText(headers){
     });
 };
 
+//const dateOptions = { 
+  //  "type":"datetimepicker",
+   // "label":"Select date",
+   // "data":"action=date",
+   // "mode":"datetime"
+//}
+
 server.listen(PORT);
 console.log(`Server running at ${PORT}`);
 
@@ -192,6 +199,9 @@ async function handleEvent(event) {
     replyText = 'コートの空き状況はこちら\n';
     replyText += await fetchParkScheduleText(scrapingHeaders);
   }
+  //else if(event.message.text === '日付変更'){
+    //    return client.replyMessage(event.replyToken,dateOptions);
+  //}
   else{
     replyText = '該当するテニスコートを入力してください\n 例（会津ドーム、会津総合運動公園)';
   }
