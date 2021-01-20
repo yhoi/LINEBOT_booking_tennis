@@ -16,12 +16,30 @@ const options ={
   ca: fs.readFileSync(env.HTTPS_CA)
 }
 
-let i=0;
-let j=0;
-
 const config = {
   channelSecret: env.LINECHANNEL_SECRET,
   channelAccessToken: env.LINECHANNEL_ACCESSTOKEN
+};
+
+function getHeaders(){
+  return new Promise(
+    function(resolve,reject){
+      const options = {
+	url:'http://reserve.city.aizuwakamatsu.fukushima.jp/index.php',
+	headers:{
+	  'Set-Cookie':env.AIZUTENNIS_COOKIE,
+	}
+      }
+      request(options,function(error,response,body){
+	if(error){
+	  reject(error);
+	}
+	else{
+	  resolve(response.headers);
+	}
+      })
+    }
+  );
 };
 
 const app = express();
@@ -36,8 +54,10 @@ app.post('/webhook', line.middleware(config), (req, res) => {
 });
 
 const client = new line.Client(config);
+//let i=0;
+//let j=0;
 
-function getYearMonth(){
+function getYearMonthString(){
   const date = new Date();
   const year = date.getFullYear();
   const month = date.getMonth()+1;
@@ -50,134 +70,98 @@ function getYearMonth(){
   }
 };
 
-function domeResult(headers){
+function setCourtOptions(headers){
   const date = new Date();
+  const options ={
+    headers: {
+      cookie: headers['set-cookie'][0],
+    },
+    uri: "http://reserve.city.aizuwakamatsu.fukushima.jp/index.php",
+    form: {
+      "op": "kensaku_koma",
+      "UseYM":  getYearMonthString(),
+      "UseDay": date.getDate(),
+      "Type": "01",
+      "Mokuteki01": "02",
+      "ShisetsuCode": "002",
+      "action.x":"126",
+      "action.y":"28",
+    },
+  };
+  return options; 
+};
+
+function printTimetable($,courtNum,i){
+  let timetable =8;
+  let text='';
+  text += agh.sprintf('%3sコート\n',courtNum);
+  const x = $('.koma-table').eq(i);
+  for(let j=1;j<13;j++){
+    let mark = $(x).find('td').eq(j).text();
+    timetable++;
+    text += agh.sprintf('%2d時　～　%d時  |  %5s\n',timetable,timetable+1,mark);
+  }
+  text += '\n';
+  return text;
+}
+
+function domeResult(headers){
+  const options = setCourtOptions(headers);  
   return new Promise(
     function(resolve,reject){
-      const options ={
-        headers: {
-          cookie: headers['set-cookie'][0],
-        },
-        uri: "http://reserve.city.aizuwakamatsu.fukushima.jp/index.php",
-        form: {	
-          "op": "kensaku_koma",
-          "UseYM":  getYearMonth(),
-          "UseDay": date.getDate(),
-          "Type": "01",
-          "Mokuteki01": "02",
-          "ShisetsuCode": "002",
-          "action.x":"126",
-          "action.y":"28",
-        },
-      };
       let text ='';
       let courtNum=1;
-      let timetable=8;
       request.post(options,function(err, res, body){
-        if (err) {
-          reject(err);
-        }
-        else {
-          text +='  会津ドーム\n';
-          let $ = cheerio.load(body);
-          let length = $('.koma-table').length;
-          for(i=26;i<length-1;i++){
-            if(i==27||i==30){
-              continue;
-            }
-            else{
-              timetable=8; 
-              text += agh.sprintf('%3sコート\n',courtNum);
-              if(courtNum==20) courtNum =0;
-              courtNum++;
-              const x = $('.koma-table').eq(i);
-              for(j=1;j<13;j++){
-                let mark = $(x).find('td').eq(j).text();
-                timetable++;
-                text += agh.sprintf('%2d時　～　%d時  |  %5s\n',timetable,timetable+1,mark)
-              }
-              text += '\n';
-            }
-          }  
-        }
-        resolve(text);
+	if (err) {
+	  reject(err);
+	}
+	else {
+	  text +='  会津ドーム\n';
+	  const $ = cheerio.load(body);
+	  const length = $('.koma-table').length;
+	  for(let i=26;i<length-1;i++){
+	    if(i==27||i==30){
+	      continue;
+	    }
+	    else{
+	      text += printTimetable($,courtNum,i);
+	      courtNum++; 
+	    }
+	  }  
+	}
+	resolve(text);
       });
-    });			
+    });
 };
 
 function parkResult(headers){
   const date = new Date();
   return new Promise(
     function(resolve,reject){
-      const options ={
-        headers: {
-          cookie: headers['set-cookie'][0],
-        },
-        uri: "http://reserve.city.aizuwakamatsu.fukushima.jp/index.php",
-        form: {
-          "op": "kensaku_koma",
-          "UseYM": getYearMonth(),
-          "UseDay": date.getDate(),
-          "Type": "01",
-          "Mokuteki01": "02",
-          "ShisetsuCode": "002",
-          "action.x":"126",
-          "action.y":"28",
-        },
-      };
-      let timetable = 8;
+      const options = setCourtOptions(headers);
       let text ='';
       let courtNum=1;
       request.post(options,function(err, res, body) {
-        if (err) {
-          reject(err);
-        }
-        else {
-          text +='   会津総合運動公園\n';
-          const $ = cheerio.load(body);
-          const length = $('.koma-table').length;
-          for(i=2;i<=24;i++){
-            if(i==8||i==20||i==13){
-              continue;
-            }
-            else{
-              timetable =8;
-              text += agh.sprintf('%3sコート\n',courtNum);
-              courtNum++;
-              const x = $('.koma-table').eq(i);
-              for(j=1;j<13;j++){
-                let mark = $(x).find('td').eq(j).text();
-                timetable++;
-                text += agh.sprintf('%2d時　～　%d時  |  %5s\n',timetable,timetable+1,mark);
-              }
-              text += '\n';
-            }
-          }
-        }
-        resolve(text);	
+	if (err) {
+	  reject(err);
+	}
+	else {
+	  text +='   会津総合運動公園\n';
+	  const $ = cheerio.load(body);
+	  const length = $('.koma-table').length;
+	  for(let i=2;i<=24;i++){
+	    if(i==8||i==20||i==13){
+	      continue;
+	    }
+	    else{
+	      text+=printTimetable($,courtNum,i);
+	      courtNum++;
+	    }
+	  }
+	}
+	resolve(text);	
       });
     });
-};
-
-function setHeaders(){
-  return new Promise(
-    function(resolve,reject){
-      const options = {
-        url:'http://reserve.city.aizuwakamatsu.fukushima.jp/index.php',
-        headers:{
-          'Set-Cookie':env.AIZUTENNIS_COOKIE,
-        }
-      }
-      request(options,function(error,response,body){
-        if(error){
-          reject(error);
-        }
-        else{
-          resolve(response.headers);
-        }
-      })
-    }
-  );
 };
 
 server.listen(PORT);
@@ -188,16 +172,16 @@ async function handleEvent(event) {
     return Promise.resolve(null);
   }
 
-  const getHeaders = await setHeaders(); 
+  const headers = await getHeaders(); 
   let replyText = '';
 
   if(event.message.text === '会津ドーム'){
     replyText = 'コートの空き状況はこちら';
-    replyText +=  await domeResult(getHeaders);
+    replyText +=  await domeResult(headers);
   }
   else if(event.message.text === '会津総合運動公園'){
     replyText = 'コートの空き状況はこちら\n';
-    replyText += await parkResult(getHeaders);
+    replyText += await parkResult(headers);
   }
   else{
     replyText = '該当するテニスコートを入力してください\n 例（会津ドーム、会津総合運動公園)';
