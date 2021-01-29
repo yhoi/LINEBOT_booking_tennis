@@ -57,7 +57,7 @@ app.post('/webhook', line.middleware(config), (req, res) => {
 
 const client = new line.Client(config);
 
-function getCourtOptions(headers,yearMonth,date){
+function genCourtOptions(headers,yearMonth,date){
   const options ={
     headers: {
       cookie: headers['set-cookie'][0],
@@ -78,7 +78,7 @@ function getCourtOptions(headers,yearMonth,date){
 };
 
 //printTimetableはコートの空き状況をtextとして返す関数
-function geneStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum){
+function genStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum){
   let timetable =8;
   let text='';
   for(let i =courtNum;i<courtNum+4;i++){ 
@@ -114,7 +114,7 @@ function geneStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum){
 }
 
 function fetchDomeScheduleText(headers,yearMonth,date){
-  const options = getCourtOptions(headers,yearMonth,date);  
+  const options = genCourtOptions(headers,yearMonth,date);  
   return new Promise(
     function(resolve,reject){
       let text = yearMonth.substr(4,2)+'月'+date+'日\n';
@@ -127,7 +127,7 @@ function fetchDomeScheduleText(headers,yearMonth,date){
 	  text +='会津ドーム\n';
 	  const $ = cheerio.load(body);
 	  const length = $('.koma-table').length;
-	  text += geneStringTimetable($,26,length-1,1);
+	  text += genStringTimetable($,26,length-1,1);
 	}
 	resolve(text);
       });
@@ -137,7 +137,7 @@ function fetchDomeScheduleText(headers,yearMonth,date){
 function fetchParkScheduleText(headers,yearMonth,date){
   return new Promise(
     function(resolve,reject){
-      const options = getCourtOptions(headers,yearMonth,date);
+      const options = genCourtOptions(headers,yearMonth,date);
       let text = yearMonth.substr(4,2)+'月'+date+'日\n';
       let courtNum=1;
       request.post(options,function(err, res, body) {
@@ -151,7 +151,7 @@ function fetchParkScheduleText(headers,yearMonth,date){
 	  let ScrapingCourtSize=6;
 	  for(courtNum = 1;courtNum<=20;courtNum=courtNum+4){
 	    
-	    text+=geneStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum);
+	    text+=genStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum);
 	    text+='\n';
 
 	    //continueする場合によってScrapingCourtNumとScrapingCourtSizeを変更する
