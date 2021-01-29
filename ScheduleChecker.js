@@ -78,7 +78,7 @@ function setCourtOptions(headers,yearMonth,date){
 };
 
 //printTimetableはコートの空き状況をtextとして返す関数
-function printTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum){
+function stringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum){
   let timetable =8;
   let text='';
   for(let i =courtNum;i<courtNum+4;i++){ 
@@ -93,9 +93,9 @@ function printTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum){
     //kはスクレイピングで取得をするコート番号の指定
     for(let k=scrapingCourtNum;k<scrapingCourtSize;k++){
       //複数のコートを表示するところをcontinue
-      ////例　１・２コート　このような形で表示されているところ
+      //例　１・２コート　このような形で表示されているところ
       if( k==8 || k==13 || k==20 || k==27|| k==30){
-	continue;
+      	continue;
       }
       else{
 	const x = $('.koma-table').eq(k);
@@ -127,7 +127,7 @@ function fetchDomeScheduleText(headers,yearMonth,date){
 	  text +='会津ドーム\n';
 	  const $ = cheerio.load(body);
 	  const length = $('.koma-table').length;
-	  text += printTimetable($,26,length-1,1);
+	  text += stringTimetable($,26,length-1,1);
 	}
 	resolve(text);
       });
@@ -151,7 +151,7 @@ function fetchParkScheduleText(headers,yearMonth,date){
 	  let ScrapingCourtSize=6;
 	  for(courtNum = 1;courtNum<=20;courtNum=courtNum+4){
 	    
-	    text+=printTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum);
+	    text+=stringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum);
 	    text+='\n';
 
 	    //continueする場合によってScrapingCourtNumとScrapingCourtSizeを変更する
