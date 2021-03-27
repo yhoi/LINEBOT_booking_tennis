@@ -1,5 +1,4 @@
 'use strict';
-//これが見えていたらダメ
 const express = require('express');
 const line = require('@line/bot-sdk');
 const PORT = 5000;
@@ -8,8 +7,7 @@ const cheerio = require("cheerio");
 const agh = require('agh.sprintf');
 const fs = require('fs');
 const https = require('https');
-const env = process.env
-
+const env = process.env;
 
 const options ={
   key: fs.readFileSync(env.HTTPS_KEY),
@@ -70,21 +68,21 @@ function genCourtOptions(headers,yearMonth,date){
       "UseDay": date,
       "Type": "01",
       "Mokuteki01": "02",
-      "ShisetsuCode": "002",
-      "action.x":"126",
-      "action.y":"28",
+      "ShisetsuCode": "0",
+      "action.x":"145",
+      "action.y":"4",
     },
   };
   return options; 
 };
 
 //printTimetableはコートの空き状況をtextとして返す関数
-function genStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum){
+function genStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum,courtNumSize){
   let timetable =8;
   let text='';
-  for(let i =courtNum;i<courtNum+4;i++){ 
-    if(i==courtNum) text += agh.sprintf('コート番号  | %2d  |',i);
-    else	text += agh.sprintf(' %2d  |',i);
+  for(let i =courtNum;i<courtNumSize;i++){ 
+    if(i==courtNum) text += agh.sprintf(' コート番号  | %2d  |',i);
+    else text += agh.sprintf(' %2d  |',i);
   }
   text += '\n';
   //jはスクレイピングで取得するマークの指定
@@ -95,13 +93,16 @@ function genStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum){
     for(let k=scrapingCourtNum;k<scrapingCourtSize;k++){
       //複数のコートを表示するところをcontinue
       //例　１・２コート　このような形で表示されているところ
-      if( k==8 || k==13 || k==20 || k==27|| k==30){
+      if( k==18 || k==13 || k==25 || k==32|| k==35){
       	continue;
       }
       else{
 	const x = $('.koma-table').eq(k);
-	const markString = $(x).find('td').eq(j).text();
-	if(k==scrapingCourtNum){
+	let markString = $(x).find('td').eq(j).text();
+        if(markString=='休館') markString='休';
+	else if(markString=='保守') markString='保';
+	
+	if(k==scrapingCourtNum||k==26){
 	  text += agh.sprintf("%2d時 ~ %2d時 |  %s  |",timetable,timetable+1,markString);
 	}
 	else{
@@ -127,15 +128,14 @@ function fetchDomeScheduleText(headers,yearMonth,date){
 	else {
 	  text +='会津ドーム\n';
 	  const $ = cheerio.load(body);
-	  const length = $('.koma-table').length;
-	  text += genStringTimetable($,26,length-1,1);
+	  text += genStringTimetable($,31,37,1,5);
 	}
 	resolve(text);
       });
     });
 };
 
-/*function fetchHardScheduleText(headers,yearMonth,date){
+function fetchHardScheduleText(headers,yearMonth,date){
   const options = genCourtOptions(headers,yearMonth,date);
   return new Promise(
     function(resolve,reject){
@@ -148,14 +148,13 @@ function fetchDomeScheduleText(headers,yearMonth,date){
         else {
           text +='市民ふれあいスポーツ広場\n';
           const $ = cheerio.load(body);
-          console.log($('.koma-table'));
           const length = $('.koma-table').length;
-          text += genStringTimetable($,26,length-1,1);
+          text += genStringTimetable($,45,47,1,3);
         }
         resolve(text);
       });
     });
-};*/
+};
 
 function fetchParkScheduleText(headers,yearMonth,date){
   return new Promise(
@@ -170,21 +169,20 @@ function fetchParkScheduleText(headers,yearMonth,date){
 	else {
 	  text +='会津総合運動公園\n';
 	  const $ = cheerio.load(body);
-	  let ScrapingCourtNum=2;
-	  let ScrapingCourtSize=6;
+	  let ScrapingCourtNum=7;
+	  let ScrapingCourtSize=11;
 	  for(courtNum = 1;courtNum<=20;courtNum=courtNum+4){
-	    
-	    text+=genStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum);
+	    console.log(ScrapingCourtNum);
+	    text+=genStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNum+4);
 	    text+='\n';
-
 	    //continueする場合によってScrapingCourtNumとScrapingCourtSizeを変更する
-	    if(ScrapingCourtNum == 2||ScrapingCourtNum == 11){
-	      ScrapingCourtNum+4;
-	      ScrapingCourtSize+5;
+	    if(ScrapingCourtSize == 11||ScrapingCourtSize == 16||ScrapingCourtSize ==25 ){
+	      ScrapingCourtNum = ScrapingCourtSize;
+	      ScrapingCourtSize = ScrapingCourtSize+5;
 	    }
-	    else if(ScrapingCourtNum == 6||ScrapingCourtNum == 15){
-	      ScrapingCourtNum+5;
-	      ScrapingCourtSize+4;
+	    else if(ScrapingCourtSize == 21){
+	      ScrapingCourtNum = ScrapingCourtSize;
+	      ScrapingCourtSize= ScrapingCourtSize+4;
 	    }
 	  }	
 	}
@@ -196,7 +194,7 @@ function fetchParkScheduleText(headers,yearMonth,date){
 function dateConfirm(place){ 
   return {
     "type": "template",
-    "altText": "this is a buttons template",
+    "altText": "日程を決めてください",
     "template": {
       "type": "confirm",
       "text": "日程を決めてください",
@@ -237,9 +235,9 @@ async function handleEvent(event) {
     else if(event.postback.data==='AizuPark'){
       replyMessage += await fetchParkScheduleText(scrapingHeaders,scrapingForYearMonth,scrapingForDate);
     }
-    /*else if(event.postback.data==='AizuHard'){
+    else if(event.postback.data==='AizuHard'){
       replyMessage += await fetchHardScheduleText(scrapingHeaders,scrapingForYearMonth,scrapingForDate);
-    }*/
+    }
     return client.replyMessage(event.replyToken, {
       type: 'text',
       text: replyMessage
@@ -255,10 +253,10 @@ async function handleEvent(event) {
       const confirmObject = dateConfirm('AizuPark');
       return client.replyMessage(event.replyToken,confirmObject);
     }
-    /*else if(event.message.text === '市民ふれあいスポーツ広場'){
+    else if(event.message.text === '市民ふれあいスポーツ広場'){
        const confirmObject = dateConfirm('AizuHard');
        return client.replyMessage(event.replyToken,confirmObject);
-    }*/
+    }
     else{
       replyMessage = '該当するテニスコートを入力してください\n 例（会津ドーム、会津総合運動公園)';
     }
