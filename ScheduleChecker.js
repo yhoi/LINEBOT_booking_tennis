@@ -1,5 +1,5 @@
 'use strict';
-
+//これが見えていたらダメ
 const express = require('express');
 const line = require('@line/bot-sdk');
 const PORT = 5000;
@@ -8,7 +8,8 @@ const cheerio = require("cheerio");
 const agh = require('agh.sprintf');
 const fs = require('fs');
 const https = require('https');
-const env = process.env;
+const env = process.env
+
 
 const options ={
   key: fs.readFileSync(env.HTTPS_KEY),
@@ -134,6 +135,28 @@ function fetchDomeScheduleText(headers,yearMonth,date){
     });
 };
 
+/*function fetchHardScheduleText(headers,yearMonth,date){
+  const options = genCourtOptions(headers,yearMonth,date);
+  return new Promise(
+    function(resolve,reject){
+      let text = yearMonth.substr(4,2)+'月'+date+'日\n';
+      let courtNum=1;
+      request.post(options,function(err, res, body){
+        if (err) {
+          reject(err);
+        }
+        else {
+          text +='市民ふれあいスポーツ広場\n';
+          const $ = cheerio.load(body);
+          console.log($('.koma-table'));
+          const length = $('.koma-table').length;
+          text += genStringTimetable($,26,length-1,1);
+        }
+        resolve(text);
+      });
+    });
+};*/
+
 function fetchParkScheduleText(headers,yearMonth,date){
   return new Promise(
     function(resolve,reject){
@@ -187,7 +210,7 @@ function dateConfirm(place){
 	{
 	  "type": "message",
 	  "label": "キャンセル",
-	  "text": place
+	  "text": "キャンセル"
 	},
       ]
     }
@@ -211,9 +234,12 @@ async function handleEvent(event) {
     if(event.postback.data==='AizuDome'){
       replyMessage += await fetchDomeScheduleText(scrapingHeaders,scrapingForYearMonth,scrapingForDate);
     }	
-    else{
+    else if(event.postback.data==='AizuPark'){
       replyMessage += await fetchParkScheduleText(scrapingHeaders,scrapingForYearMonth,scrapingForDate);
     }
+    /*else if(event.postback.data==='AizuHard'){
+      replyMessage += await fetchHardScheduleText(scrapingHeaders,scrapingForYearMonth,scrapingForDate);
+    }*/
     return client.replyMessage(event.replyToken, {
       type: 'text',
       text: replyMessage
@@ -229,10 +255,13 @@ async function handleEvent(event) {
       const confirmObject = dateConfirm('AizuPark');
       return client.replyMessage(event.replyToken,confirmObject);
     }
+    /*else if(event.message.text === '市民ふれあいスポーツ広場'){
+       const confirmObject = dateConfirm('AizuHard');
+       return client.replyMessage(event.replyToken,confirmObject);
+    }*/
     else{
       replyMessage = '該当するテニスコートを入力してください\n 例（会津ドーム、会津総合運動公園)';
     }
-
     return client.replyMessage(event.replyToken, {
       type: 'text',
       text: replyMessage
