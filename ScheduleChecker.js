@@ -56,7 +56,7 @@ app.post('/webhook', line.middleware(config), (req, res) => {
 
 const client = new line.Client(config);
 
-function genCourtOptions(headers,yearMonth,date){
+function getCourtOptions(headers,yearMonth,date){
   const options ={
     headers: {
       cookie: headers['set-cookie'][0],
@@ -77,12 +77,19 @@ function genCourtOptions(headers,yearMonth,date){
 };
 
 //printTimetableはコートの空き状況をtextとして返す関数
-function genStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum,courtNumSize){
+function getStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum,courtNumSize){
   let timetable =8;
   let text='';
-  for(let i =courtNum;i<courtNumSize;i++){ 
-    if(i==courtNum) text += agh.sprintf(' コート番号  | %2d  |',i);
-    else text += agh.sprintf(' %2d  |',i);
+  for(let i =courtNum;i<courtNumSize;i++){
+    //ふれあいのみコートの表記がA・B
+    if(courtNumSize==3){
+      if(i==courtNum) text += agh.sprintf(' コート番号  | %2s  |',"A");
+      else text += agh.sprintf(' %2s  |','B');
+    }
+    else{
+      if(i==courtNum) text += agh.sprintf(' コート番号  | %2d  |',i);
+      else text += agh.sprintf(' %2d  |',i);
+    }
   }
   text += '\n';
   //jはスクレイピングで取得するマークの指定
@@ -116,11 +123,10 @@ function genStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum,courtN
 }
 
 function fetchDomeScheduleText(headers,yearMonth,date){
-  const options = genCourtOptions(headers,yearMonth,date);  
+  const options = getCourtOptions(headers,yearMonth,date);  
   return new Promise(
     function(resolve,reject){
       let text = yearMonth.substr(4,2)+'月'+date+'日\n';
-      let courtNum=1;
       request.post(options,function(err, res, body){
 	if (err) {
 	  reject(err);
@@ -128,7 +134,11 @@ function fetchDomeScheduleText(headers,yearMonth,date){
 	else {
 	  text +='会津ドーム\n';
 	  const $ = cheerio.load(body);
-	  text += genStringTimetable($,31,37,1,5);
+          const courtNum=1;
+	  const courtNumSize = 5;
+	  const ScrapingCourtNum=31;
+          const ScrapingCourtSize=37;
+	  text += getStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNumSize);
 	}
 	resolve(text);
       });
@@ -136,11 +146,10 @@ function fetchDomeScheduleText(headers,yearMonth,date){
 };
 
 function fetchHardScheduleText(headers,yearMonth,date){
-  const options = genCourtOptions(headers,yearMonth,date);
+  const options = getCourtOptions(headers,yearMonth,date);
   return new Promise(
     function(resolve,reject){
       let text = yearMonth.substr(4,2)+'月'+date+'日\n';
-      let courtNum=1;
       request.post(options,function(err, res, body){
         if (err) {
           reject(err);
@@ -148,8 +157,11 @@ function fetchHardScheduleText(headers,yearMonth,date){
         else {
           text +='市民ふれあいスポーツ広場\n';
           const $ = cheerio.load(body);
-          const length = $('.koma-table').length;
-          text += genStringTimetable($,45,47,1,3);
+	  const courtNum=1;
+          const courtNumSize = 3;
+	  const ScrapingCourtNum=45;
+          const ScrapingCourtSize=47;
+	  text += getStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNumSize);
         }
         resolve(text);
       });
@@ -159,7 +171,7 @@ function fetchHardScheduleText(headers,yearMonth,date){
 function fetchParkScheduleText(headers,yearMonth,date){
   return new Promise(
     function(resolve,reject){
-      const options = genCourtOptions(headers,yearMonth,date);
+      const options = getCourtOptions(headers,yearMonth,date);
       let text = yearMonth.substr(4,2)+'月'+date+'日\n';
       let courtNum=1;
       request.post(options,function(err, res, body) {
@@ -172,8 +184,7 @@ function fetchParkScheduleText(headers,yearMonth,date){
 	  let ScrapingCourtNum=7;
 	  let ScrapingCourtSize=11;
 	  for(courtNum = 1;courtNum<=20;courtNum=courtNum+4){
-	    console.log(ScrapingCourtNum);
-	    text+=genStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNum+4);
+	    text+=getStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNum+4);
 	    text+='\n';
 	    //continueする場合によってScrapingCourtNumとScrapingCourtSizeを変更する
 	    if(ScrapingCourtSize == 11||ScrapingCourtSize == 16||ScrapingCourtSize ==25 ){
