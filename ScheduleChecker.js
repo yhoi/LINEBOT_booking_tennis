@@ -56,7 +56,7 @@ app.post('/webhook', line.middleware(config), (req, res) => {
 
 const client = new line.Client(config);
 
-function getCourtOptions(headers,yearMonth,date){
+function genCourtOptions(headers,yearMonth,date){
   const options ={
     headers: {
       cookie: headers['set-cookie'][0],
@@ -77,12 +77,13 @@ function getCourtOptions(headers,yearMonth,date){
 };
 
 //printTimetableはコートの空き状況をtextとして返す関数
-function getStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum,courtNumSize){
+function genTextTimeTable($,scrapingCourtNum,scrapingCourtSize,courtNum,courtNumSize){
   let timetable =8;
   let text='';
+  const FureaiCode=3;
   for(let i =courtNum;i<courtNumSize;i++){
     //ふれあいのみコートの表記がA・B
-    if(courtNumSize==3){
+    if(courtNumSize== FureaiCode){
       if(i==courtNum) text += agh.sprintf(' コート番号  | %2s  |',"A");
       else text += agh.sprintf(' %2s  |','B');
     }
@@ -98,9 +99,10 @@ function getStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum,courtN
     timetable++;
     //kはスクレイピングで取得をするコート番号の指定
     for(let k=scrapingCourtNum;k<scrapingCourtSize;k++){
+      const continueNumber=[18,13,25,32,35];
       //複数のコートを表示するところをcontinue
       //例　１・２コート　このような形で表示されているところ
-      if( k==18 || k==13 || k==25 || k==32|| k==35){
+      if( continueNumber.includes(k)){
       	continue;
       }
       else{
@@ -123,7 +125,7 @@ function getStringTimetable($,scrapingCourtNum,scrapingCourtSize,courtNum,courtN
 }
 
 function fetchDomeScheduleText(headers,yearMonth,date){
-  const options = getCourtOptions(headers,yearMonth,date);  
+  const options = genCourtOptions(headers,yearMonth,date);  
   return new Promise(
     function(resolve,reject){
       let text = yearMonth.substr(4,2)+'月'+date+'日\n';
@@ -134,11 +136,12 @@ function fetchDomeScheduleText(headers,yearMonth,date){
 	else {
 	  text +='会津ドーム\n';
 	  const $ = cheerio.load(body);
-          const courtNum=1;
+          /*マジックナンバーをなくす
+	  const courtNum=1;
 	  const courtNumSize = 5;
 	  const ScrapingCourtNum=31;
-          const ScrapingCourtSize=37;
-	  text += getStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNumSize);
+          const ScrapingCourtSize=37;*/
+	  text += genTextTimeTable($,31,37,1,5);
 	}
 	resolve(text);
       });
@@ -146,7 +149,7 @@ function fetchDomeScheduleText(headers,yearMonth,date){
 };
 
 function fetchHardScheduleText(headers,yearMonth,date){
-  const options = getCourtOptions(headers,yearMonth,date);
+  const options = genCourtOptions(headers,yearMonth,date);
   return new Promise(
     function(resolve,reject){
       let text = yearMonth.substr(4,2)+'月'+date+'日\n';
@@ -157,11 +160,12 @@ function fetchHardScheduleText(headers,yearMonth,date){
         else {
           text +='市民ふれあいスポーツ広場\n';
           const $ = cheerio.load(body);
+	　/*マジックナンバーをなくす　
 	  const courtNum=1;
           const courtNumSize = 3;
 	  const ScrapingCourtNum=45;
-          const ScrapingCourtSize=47;
-	  text += getStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNumSize);
+          const ScrapingCourtSize=47;*/
+	  text += genTextTimeTable($,45,47,1,3);
         }
         resolve(text);
       });
@@ -171,7 +175,7 @@ function fetchHardScheduleText(headers,yearMonth,date){
 function fetchParkScheduleText(headers,yearMonth,date){
   return new Promise(
     function(resolve,reject){
-      const options = getCourtOptions(headers,yearMonth,date);
+      const options = genCourtOptions(headers,yearMonth,date);
       let text = yearMonth.substr(4,2)+'月'+date+'日\n';
       let courtNum=1;
       request.post(options,function(err, res, body) {
@@ -183,11 +187,12 @@ function fetchParkScheduleText(headers,yearMonth,date){
 	  const $ = cheerio.load(body);
 	  let ScrapingCourtNum=7;
 	  let ScrapingCourtSize=11;
+	  const continueCode = [11,16,25];
 	  for(courtNum = 1;courtNum<=20;courtNum=courtNum+4){
-	    text+=getStringTimetable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNum+4);
+	    text+=genTextTimeTable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNum+4);
 	    text+='\n';
 	    //continueする場合によってScrapingCourtNumとScrapingCourtSizeを変更する
-	    if(ScrapingCourtSize == 11||ScrapingCourtSize == 16||ScrapingCourtSize ==25 ){
+	    if(continueCode.includes(ScrapingCourtSize)){
 	      ScrapingCourtNum = ScrapingCourtSize;
 	      ScrapingCourtSize = ScrapingCourtSize+5;
 	    }
@@ -202,7 +207,7 @@ function fetchParkScheduleText(headers,yearMonth,date){
     });
 };
 
-function dateConfirm(place){ 
+function genDateConfirmObject(place){ 
   return {
     "type": "template",
     "altText": "日程を決めてください",
@@ -257,15 +262,15 @@ async function handleEvent(event) {
 
   else if (event.type === 'message' || event.message.type === 'text'){
     if(event.message.text === '会津ドーム'){
-      const confirmObject = dateConfirm('AizuDome');
+      const confirmObject = genDateConfirmObject('AizuDome');
       return client.replyMessage(event.replyToken,confirmObject);
     }
     else if(event.message.text === '会津総合運動公園'){
-      const confirmObject = dateConfirm('AizuPark');
+      const confirmObject = genDateConfirmObject('AizuPark');
       return client.replyMessage(event.replyToken,confirmObject);
     }
     else if(event.message.text === '市民ふれあいスポーツ広場'){
-       const confirmObject = dateConfirm('AizuHard');
+       const confirmObject = genDateConfirmObject('AizuHard');
        return client.replyMessage(event.replyToken,confirmObject);
     }
     else{
