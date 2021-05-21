@@ -1,7 +1,7 @@
 'use strict';
 const express = require('express');
 const line = require('@line/bot-sdk');
-const PORT = 5000;
+const PORT = 3000;
 const request = require("request");
 const cheerio = require("cheerio");
 const agh = require('agh.sprintf');
