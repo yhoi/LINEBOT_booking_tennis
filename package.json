@@ -14,6 +14,7 @@
     "agh.sprintf": "0.0.11",
     "cheerio": "^1.0.0-rc.3",
     "conf": "^8.0.0",
+    "dotenv": "^16.0.0",
     "express": "^4.17.1",
     "https": "^1.0.0",
     "puppeteer": "^5.3.1",

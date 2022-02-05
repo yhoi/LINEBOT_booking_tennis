@@ -7,7 +7,10 @@ const cheerio = require("cheerio");
 const agh = require('agh.sprintf');
 const fs = require('fs');
 const https = require('https');
+require('dotenv').config()
 const env = process.env;
+
+console.log(env)
 
 const options ={
   key: fs.readFileSync(env.HTTPS_KEY),
@@ -106,17 +109,17 @@ function genTextTimeTable($,scrapingCourtNum,scrapingCourtSize,courtNum,courtNum
       	continue;
       }
       else{
-	const x = $('.koma-table').eq(k);
-	let markString = $(x).find('td').eq(j).text();
+	      const x = $('.koma-table').eq(k);
+	      let markString = $(x).find('td').eq(j).text();
         if(markString=='休館') markString='休';
-	else if(markString=='保守') markString='保';
+	      else if(markString=='保守') markString='保';
 	
-	if(k==scrapingCourtNum||k==26){
-	  text += agh.sprintf("%2d時 ~ %2d時 |  %s  |",timetable,timetable+1,markString);
-	}
-	else{
-	  text+= agh.sprintf("  %s  |",markString);
-	}
+	      if(k==scrapingCourtNum||k==26){
+	        text += agh.sprintf("%2d時 ~ %2d時 |  %s  |",timetable,timetable+1,markString);
+	      }
+	      else{
+	        text+= agh.sprintf("  %s  |",markString);
+	      }
       }
     }
     text +='\n'; 
@@ -130,22 +133,23 @@ function fetchDomeScheduleText(headers,yearMonth,date){
     function(resolve,reject){
       let text = yearMonth.substr(4,2)+'月'+date+'日\n';
       request.post(options,function(err, res, body){
-	if (err) {
-	  reject(err);
-	}
-	else {
-	  text +='会津ドーム\n';
-	  const $ = cheerio.load(body);
-          /*マジックナンバーをなくす
-	  const courtNum=1;
-	  const courtNumSize = 5;
-	  const ScrapingCourtNum=31;
-          const ScrapingCourtSize=37;*/
-	  text += genTextTimeTable($,31,37,1,5);
-	}
-	resolve(text);
-      });
+      if (err) {
+	      reject(err);
+	    }
+	    else {
+        console.log(body)
+	      text +='会津ドーム\n';
+	      const $ = cheerio.load(body);
+        /*マジックナンバーをなくす
+	      const courtNum=1;
+	      const courtNumSize = 5;
+	      const ScrapingCourtNum=31;
+        const ScrapingCourtSize=37;*/
+	      text += genTextTimeTable($,31,37,1,5);
+	    }
+	    resolve(text);
     });
+  });
 };
 
 function fetchHardScheduleText(headers,yearMonth,date){
@@ -160,16 +164,18 @@ function fetchHardScheduleText(headers,yearMonth,date){
         else {
           text +='市民ふれあいスポーツ広場\n';
           const $ = cheerio.load(body);
-	　/*マジックナンバーをなくす　
-	  const courtNum=1;
+          console.log(body)
+          /*マジックナンバーをなくす　
+          const courtNum=1;
           const courtNumSize = 3;
-	  const ScrapingCourtNum=45;
+          const ScrapingCourtNum=45;
           const ScrapingCourtSize=47;*/
-	  text += genTextTimeTable($,45,47,1,3);
+	        text += genTextTimeTable($,45,47,1,3);
         }
         resolve(text);
       });
-    });
+    }
+  );
 };
 
 function fetchParkScheduleText(headers,yearMonth,date){
@@ -179,32 +185,32 @@ function fetchParkScheduleText(headers,yearMonth,date){
       let text = yearMonth.substr(4,2)+'月'+date+'日\n';
       let courtNum=1;
       request.post(options,function(err, res, body) {
-	if (err) {
-	  reject(err);
-	}
-	else {
-	  text +='会津総合運動公園\n';
-	  const $ = cheerio.load(body);
-	  let ScrapingCourtNum=7;
-	  let ScrapingCourtSize=11;
-	  const continueCode = [11,16,25];
-	  for(courtNum = 1;courtNum<=20;courtNum=courtNum+4){
-	    text+=genTextTimeTable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNum+4);
-	    text+='\n';
-	    //continueする場合によってScrapingCourtNumとScrapingCourtSizeを変更する
-	    if(continueCode.includes(ScrapingCourtSize)){
-	      ScrapingCourtNum = ScrapingCourtSize;
-	      ScrapingCourtSize = ScrapingCourtSize+5;
+	    if (err) {
+	      reject(err);
 	    }
-	    else if(ScrapingCourtSize == 21){
-	      ScrapingCourtNum = ScrapingCourtSize;
-	      ScrapingCourtSize= ScrapingCourtSize+4;
+	    else {
+	      text +='会津総合運動公園\n';
+	      const $ = cheerio.load(body);
+	      let ScrapingCourtNum=7;
+	      let ScrapingCourtSize=11;
+	      const continueCode = [11,16,25];
+	      for(courtNum = 1;courtNum<=20;courtNum=courtNum+4){
+	        text+=genTextTimeTable($,ScrapingCourtNum,ScrapingCourtSize,courtNum,courtNum+4);
+	        text+='\n';
+	        //continueする場合によってScrapingCourtNumとScrapingCourtSizeを変更する
+	        if(continueCode.includes(ScrapingCourtSize)){
+	          ScrapingCourtNum = ScrapingCourtSize;
+	          ScrapingCourtSize = ScrapingCourtSize+5;
+	        }
+	        else if(ScrapingCourtSize == 21){
+	          ScrapingCourtNum = ScrapingCourtSize;
+	          ScrapingCourtSize= ScrapingCourtSize+4;
+	        }
+	      }	
 	    }
-	  }	
-	}
-	resolve(text);
-      });
+	    resolve(text);
     });
+  });
 };
 
 function genDateConfirmObject(place){ 
@@ -215,17 +221,17 @@ function genDateConfirmObject(place){
       "type": "confirm",
       "text": "日程を決めてください",
       "actions": [
-	{
-	  "type": "datetimepicker",
-	  "label": "日程を決める",
-	  "mode": "date",
-	  "data": place
-	},
-	{
-	  "type": "message",
-	  "label": "キャンセル",
-	  "text": "キャンセル"
-	},
+	      {
+	      "type": "datetimepicker",
+	      "label": "日程を決める",
+	      "mode": "date",
+	      "data": place
+	      },
+	      {
+	      "type": "message",
+	      "label": "キャンセル",
+	      "text": "キャンセル"
+	      },
       ]
     }
   };
