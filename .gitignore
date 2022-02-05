@@ -1,0 +1,7 @@
+#dotenvで利用する環境変数
+.env\
+
+# Dependency directories
+node_modules/
+
+package-lock.json
