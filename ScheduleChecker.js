@@ -8,19 +8,16 @@ const agh = require('agh.sprintf');
 const fs = require('fs');
 const https = require('https');
 require('dotenv').config()
-const env = process.env;
-
-console.log(env)
 
 const options ={
-  key: fs.readFileSync(env.HTTPS_KEY),
-  cert: fs.readFileSync(env.HTTPS_CERT),
-  ca: fs.readFileSync(env.HTTPS_CA)
+  key: fs.readFileSync(process.env.HTTPS_KEY),
+  cert: fs.readFileSync(process.env.HTTPS_CERT),
+  ca: fs.readFileSync(process.env.HTTPS_CA)
 }
 
 const config = {
-  channelSecret: env.LINECHANNEL_SECRET_BOOKING_AIZUTENNIS,
-  channelAccessToken: env.LINECHANNEL_ACCESSTOKEN_BOOKING_AIZUTENNIS
+  channelSecret: process.env.LINECHANNEL_SECRET_BOOKING_AIZUTENNIS,
+  channelAccessToken: process.env.LINECHANNEL_ACCESSTOKEN_BOOKING_AIZUTENNIS
 };
 
 //fetchHeadersForScrapingはスクレイピングに必要なheaderを返す関数
@@ -28,18 +25,17 @@ function fetchHeadersForScraping(){
   return new Promise(
     function(resolve,reject){
       const options = {
-	url:'http://reserve.city.aizuwakamatsu.fukushima.jp/index.php',
-	headers:{
-	  'Set-Cookie':env.AIZUTENNIS_COOKIE,
-	}
+        url:'http://reserve.city.aizuwakamatsu.fukushima.jp/index.php',
+        headers:{
+          'Set-Cookie':process.env.AIZUTENNIS_COOKIE,
+        }
       }
       request(options,function(error,response,body){
-	if(error){
-	  reject(error);
-	}
-	else{
-	  resolve(response.headers);
-	}
+        if(error){
+          reject(error);
+        }else{
+          resolve(response.headers);
+        }
       })
     }
   );
@@ -137,7 +133,6 @@ function fetchDomeScheduleText(headers,yearMonth,date){
 	      reject(err);
 	    }
 	    else {
-        console.log(body)
 	      text +='会津ドーム\n';
 	      const $ = cheerio.load(body);
         /*マジックナンバーをなくす
@@ -164,7 +159,6 @@ function fetchHardScheduleText(headers,yearMonth,date){
         else {
           text +='市民ふれあいスポーツ広場\n';
           const $ = cheerio.load(body);
-          console.log(body)
           /*マジックナンバーをなくす　
           const courtNum=1;
           const courtNumSize = 3;
